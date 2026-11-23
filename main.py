@@ -19,17 +19,37 @@ import shutil
 import sys
 
 OUTPUT_PATH = "/output/entry.png"
+EXPECTED_SHA256 = "32934249e45308fc8f8823ed76ca56711669eba3e7a6a0ab2d110756623cd457"
+
+
+def _check_digest(digest):
+    """Return 0 when the copied file matches EXPECTED_SHA256, else 1."""
+    if digest != EXPECTED_SHA256:
+        print(
+            "error: output sha256 mismatch: got "
+            f"{digest}, expected {EXPECTED_SHA256}",
+            file=sys.stderr,
+        )
+        return 1
+    return 0
 
 
 def main():
     here = os.path.dirname(os.path.abspath(__file__))
     src = os.path.join(here, "entry.png")
+    if not os.path.isfile(src):
+        print(f"error: source image not found: {src}", file=sys.stderr)
+        return 1
     os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
     shutil.copyfile(src, OUTPUT_PATH)
     with open(OUTPUT_PATH, "rb") as fh:
         digest = hashlib.sha256(fh.read()).hexdigest()
+    verified = _check_digest(digest)
+    if verified != 0:
+        return verified
     print("wrote", OUTPUT_PATH)
     print("sha256", digest)
+    print("bytes", os.path.getsize(OUTPUT_PATH))
     return 0
 
 
